@@ -1,0 +1,10 @@
+[submodule "linux-al"]
+	path = linux-al
+	url = git@git.aerospace-lab.de:rustlet-rt/linux-al.git
+[submodule "src/cmake"]
+	path = src/cmake
+	url = git@git.aerospace-lab.de:rustlet-rt/cmake.git
+[submodule "src/main/messages"]
+	path = src/main/messages
+	url = git@git.aerospace-lab.de:rustlet-rt/messages/poc.git
+	branch = main
