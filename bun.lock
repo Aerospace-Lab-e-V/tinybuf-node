@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "@asl-gokart/sero2-node",
+      "name": "@asl-gokart/tinybuf-node",
       "devDependencies": {
         "@types/bun": "latest",
         "node-addon-api": "^8.6.0",

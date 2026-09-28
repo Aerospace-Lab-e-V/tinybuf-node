@@ -1,8 +1,8 @@
 {
   "targets": [
     {
-      "target_name": "sero2-node",
-      "sources": [ "src/sero2-node.cpp" ],
+      "target_name": "tinybuf-node",
+      "sources": [ "src/tinybuf-node.cpp" ],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")",
         "include"

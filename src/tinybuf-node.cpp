@@ -1,5 +1,5 @@
-/// @file sero2-node.cpp
-/// Node.js N-API wrapper for the rustlet-rt / sero2 C/C++ proxy library.
+/// @file tinybuf-node.cpp
+/// Node.js N-API wrapper for the rustlet-rt / tinybuf C/C++ proxy library.
 
 #include <napi.h>
 #include <string>
@@ -13,11 +13,11 @@
 
 #include "ApplicationMessages.hpp"
 
-class Sero2Proxy : public Napi::ObjectWrap<Sero2Proxy> {
+class TinybufProxy : public Napi::ObjectWrap<TinybufProxy> {
 public:
     static Napi::Object Init(Napi::Env env, Napi::Object exports);
-    Sero2Proxy(const Napi::CallbackInfo& info);
-    ~Sero2Proxy();
+    TinybufProxy(const Napi::CallbackInfo& info);
+    ~TinybufProxy();
 
 private:
     // Lifecycle
@@ -43,34 +43,34 @@ private:
     Napi::ThreadSafeFunction m_tsfnAdcStatus;
 };
 
-Napi::Object Sero2Proxy::Init(Napi::Env env, Napi::Object exports) {
-    Napi::Function func = DefineClass(env, "Sero2Proxy", {
-        InstanceMethod("open", &Sero2Proxy::Open),
-        InstanceMethod("close", &Sero2Proxy::Close),
-        InstanceMethod("isAvailable", &Sero2Proxy::IsAvailable),
-        InstanceMethod("getRunLevel", &Sero2Proxy::GetRunLevel),
-        InstanceMethod("getStatus", &Sero2Proxy::GetStatus),
-        InstanceMethod("sendLedCommand", &Sero2Proxy::SendLedCommand),
-        InstanceMethod("onAdcStatus", &Sero2Proxy::OnAdcStatus),
-        InstanceMethod("clearAdcStatus", &Sero2Proxy::ClearAdcStatus),
+Napi::Object TinybufProxy::Init(Napi::Env env, Napi::Object exports) {
+    Napi::Function func = DefineClass(env, "TinybufProxy", {
+        InstanceMethod("open", &TinybufProxy::Open),
+        InstanceMethod("close", &TinybufProxy::Close),
+        InstanceMethod("isAvailable", &TinybufProxy::IsAvailable),
+        InstanceMethod("getRunLevel", &TinybufProxy::GetRunLevel),
+        InstanceMethod("getStatus", &TinybufProxy::GetStatus),
+        InstanceMethod("sendLedCommand", &TinybufProxy::SendLedCommand),
+        InstanceMethod("onAdcStatus", &TinybufProxy::OnAdcStatus),
+        InstanceMethod("clearAdcStatus", &TinybufProxy::ClearAdcStatus),
     });
 
-    exports.Set("Sero2Proxy", func);
+    exports.Set("TinybufProxy", func);
     return exports;
 }
 
-Sero2Proxy::Sero2Proxy(const Napi::CallbackInfo& info)
-    : Napi::ObjectWrap<Sero2Proxy>(info) {
+TinybufProxy::TinybufProxy(const Napi::CallbackInfo& info)
+    : Napi::ObjectWrap<TinybufProxy>(info) {
     if (info.Length() > 0 && info[0].IsString()) {
         m_configFile = info[0].As<Napi::String>().Utf8Value();
     }
 }
 
-Sero2Proxy::~Sero2Proxy() {
+TinybufProxy::~TinybufProxy() {
     performClose();
 }
 
-void Sero2Proxy::performClose() {
+void TinybufProxy::performClose() {
     if (m_opened) {
         MessageDispatcherPassthruRTIF<AdcStatus>::getInstance().clear();
         if (m_tsfnAdcStatus) {
@@ -82,7 +82,7 @@ void Sero2Proxy::performClose() {
     }
 }
 
-Napi::Value Sero2Proxy::Open(const Napi::CallbackInfo& info) {
+Napi::Value TinybufProxy::Open(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
     if (m_opened) {
@@ -96,7 +96,7 @@ Napi::Value Sero2Proxy::Open(const Napi::CallbackInfo& info) {
 
     const char* pConfigFile = configFile.empty() ? nullptr : configFile.c_str();
 
-    int result = startBootLoader("sero2-node", pConfigFile);
+    int result = startBootLoader("tinybuf-node", pConfigFile);
     if (result != 0) {
         std::string errMsg = "Failed to start BootLoader: ";
         errMsg += getStatusBootLoader();
@@ -108,28 +108,28 @@ Napi::Value Sero2Proxy::Open(const Napi::CallbackInfo& info) {
     return Napi::Boolean::New(env, true);
 }
 
-Napi::Value Sero2Proxy::Close(const Napi::CallbackInfo& info) {
+Napi::Value TinybufProxy::Close(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     performClose();
     return env.Undefined();
 }
 
-Napi::Value Sero2Proxy::IsAvailable(const Napi::CallbackInfo& info) {
+Napi::Value TinybufProxy::IsAvailable(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     return Napi::Boolean::New(env, isAvailableProxy());
 }
 
-Napi::Value Sero2Proxy::GetRunLevel(const Napi::CallbackInfo& info) {
+Napi::Value TinybufProxy::GetRunLevel(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     return Napi::Number::New(env, getRunLevelBootLoader());
 }
 
-Napi::Value Sero2Proxy::GetStatus(const Napi::CallbackInfo& info) {
+Napi::Value TinybufProxy::GetStatus(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     return Napi::String::New(env, getStatusBootLoader());
 }
 
-Napi::Value Sero2Proxy::SendLedCommand(const Napi::CallbackInfo& info) {
+Napi::Value TinybufProxy::SendLedCommand(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
     if (!m_opened) {
@@ -156,7 +156,7 @@ Napi::Value Sero2Proxy::SendLedCommand(const Napi::CallbackInfo& info) {
     return Napi::Boolean::New(env, true);
 }
 
-Napi::Value Sero2Proxy::OnAdcStatus(const Napi::CallbackInfo& info) {
+Napi::Value TinybufProxy::OnAdcStatus(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
     if (info.Length() < 1 || !info[0].IsFunction()) {
@@ -179,14 +179,14 @@ Napi::Value Sero2Proxy::OnAdcStatus(const Napi::CallbackInfo& info) {
     );
 
     MessageDispatcherPassthruRTIF<AdcStatus>::PassthruCallback actCallback(
-        etl::delegate<void(const AdcStatus&)>::create<Sero2Proxy, &Sero2Proxy::onAdcReceived>(*this)
+        etl::delegate<void(const AdcStatus&)>::create<TinybufProxy, &TinybufProxy::onAdcReceived>(*this)
     );
     MessageDispatcherPassthruRTIF<AdcStatus>::getInstance().registerCallback(actCallback);
 
     return env.Undefined();
 }
 
-Napi::Value Sero2Proxy::ClearAdcStatus(const Napi::CallbackInfo& info) {
+Napi::Value TinybufProxy::ClearAdcStatus(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
     MessageDispatcherPassthruRTIF<AdcStatus>::getInstance().clear();
@@ -198,7 +198,7 @@ Napi::Value Sero2Proxy::ClearAdcStatus(const Napi::CallbackInfo& info) {
     return env.Undefined();
 }
 
-void Sero2Proxy::onAdcReceived(const AdcStatus& data) {
+void TinybufProxy::onAdcReceived(const AdcStatus& data) {
     if (!m_tsfnAdcStatus) {
         return;
     }
@@ -229,8 +229,8 @@ static Napi::String Version(const Napi::CallbackInfo& info) {
 static Napi::Object ModuleInit(Napi::Env env, Napi::Object exports) {
     exports.Set(Napi::String::New(env, "version"),
                 Napi::Function::New(env, Version));
-    Sero2Proxy::Init(env, exports);
+    TinybufProxy::Init(env, exports);
     return exports;
 }
 
-NODE_API_MODULE(sero2_node, ModuleInit)
+NODE_API_MODULE(tinybuf_node, ModuleInit)

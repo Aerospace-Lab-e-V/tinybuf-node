@@ -1,6 +1,6 @@
-# sero2-node
+# tinybuf-node
 
-Node.js native N-API bindings for the sero2 C++ protocol library.
+Node.js native N-API bindings for the tinybuf C++ protocol library.
 
 ## Prerequisites
 
@@ -22,7 +22,7 @@ Build tasks:
 
 ## Project structure
 
-- `src/sero2-node.cpp`: C++ N-API implementation wrapping sero2
-- `include/`: Header files for the underlying sero2 C++ library
+- `src/tinybuf-node.cpp`: C++ N-API implementation wrapping tinybuf
+- `include/`: Header files for the underlying tinybuf C++ library
 - `index.ts`: TypeScript entrypoint and type definitions
 - `binding.gyp`: node-gyp build configuration

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(sero2-node CXX)
+project(tinybuf-node CXX)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD 17)
@@ -62,13 +62,13 @@ execute_process(
 string(REPLACE "\"" "" NAPI_INCLUDE_DIR "${NAPI_INCLUDE_DIR}")
 
 # Sources
-set(SERO2_NODE_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/sero2-node.cpp"
+set(TINYBUF_NODE_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/tinybuf-node.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/MessageChannel/ApplicationMessageChannel.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/MessageDispatcher/ApplicationMessageDispatcher.cpp"
 )
 
-add_library(${PROJECT_NAME} SHARED ${SERO2_NODE_SOURCES})
+add_library(${PROJECT_NAME} SHARED ${TINYBUF_NODE_SOURCES})
 
 add_dependencies(${PROJECT_NAME} generate_app_messages)
 

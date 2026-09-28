@@ -1,7 +1,7 @@
 {
-  "name": "@asl-gokart/sero2-node",
+  "name": "@asl-gokart/tinybuf-node",
   "version": "0.1.0",
-  "description": "sero2 Node.js bindings",
+  "description": "tinybuf Node.js bindings",
   "main": "index.js",
   "publishConfig": {
     "registry": "https://registry.leotm.de/",
@@ -11,7 +11,7 @@
     "build": "node-gyp rebuild && bun build ./index.ts --outdir . --target node --format cjs",
     "build:ts": "bun build ./index.ts --outdir . --target node --format cjs",
     "build:native": "node-gyp rebuild",
-    "electron-rebuild": "electron-rebuild -f -w sero2-node"
+    "electron-rebuild": "electron-rebuild -f -w tinybuf-node"
   },
   "devDependencies": {
     "@types/bun": "latest",
