@@ -18,7 +18,7 @@ if (NOT DEFINED ENV{ETL_PATH})
     if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/../etl")
         set(ENV{ETL_PATH} "${CMAKE_CURRENT_LIST_DIR}/../etl")
     else()
-        message(FATAL_ERROR "Missing ETL_PATH. Please set ENV{ETL_PATH}")
+        set(ENV{ETL_PATH} "${CMAKE_CURRENT_BINARY_DIR}/etl-src")
     endif()
 endif()
 
@@ -41,6 +41,10 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWER)
 
+# Set output directories so .node addon is placed in build/Release
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Release")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Release")
+
 # Add linux-al static library
 add_subdirectory(linux-al)
 
@@ -49,11 +53,16 @@ add_custom_target(generate_app_messages ALL DEPENDS ${MY_SERIALIZABLE_MESSAGES})
 add_dependencies(linux-al generate_app_messages)
 
 # Query Node.js and node-addon-api include directories
-execute_process(
-    COMMAND node -p "path.resolve(process.execPath, '../../include/node')"
-    OUTPUT_VARIABLE NODE_INCLUDE_DIR
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+if(DEFINED CMAKE_JS_INC)
+    set(NODE_INCLUDE_DIR ${CMAKE_JS_INC})
+else()
+    execute_process(
+        COMMAND node -p "path.resolve(process.execPath, '../../include/node')"
+        OUTPUT_VARIABLE NODE_INCLUDE_DIR
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+endif()
+
 execute_process(
     COMMAND node -p "require('node-addon-api').include"
     OUTPUT_VARIABLE NAPI_INCLUDE_DIR
@@ -67,6 +76,10 @@ set(TINYBUF_NODE_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/MessageChannel/ApplicationMessageChannel.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/MessageDispatcher/ApplicationMessageDispatcher.cpp"
 )
+
+if(DEFINED CMAKE_JS_SRC)
+    list(APPEND TINYBUF_NODE_SOURCES ${CMAKE_JS_SRC})
+endif()
 
 add_library(${PROJECT_NAME} SHARED ${TINYBUF_NODE_SOURCES})
 
@@ -102,6 +115,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     PocoNet
     PocoUtil
     PocoFoundation
+    ${CMAKE_JS_LIB}
 )
 
 # Enable C++ exceptions for node-addon-api and POCO

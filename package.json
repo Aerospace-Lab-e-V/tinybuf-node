@@ -8,15 +8,15 @@
     "access": "public"
   },
   "scripts": {
-    "build": "node-gyp rebuild && bun build ./index.ts --outdir . --target node --format cjs",
+    "build": "cmake-js compile && bun build ./index.ts --outdir . --target node --format cjs",
     "build:ts": "bun build ./index.ts --outdir . --target node --format cjs",
-    "build:native": "node-gyp rebuild",
-    "electron-rebuild": "electron-rebuild -f -w tinybuf-node"
+    "build:native": "cmake-js compile",
+    "electron-rebuild": "cmake-js compile --runtime=electron"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "node-addon-api": "^8.6.0",
-    "node-gyp": "^12.2.0"
+    "cmake-js": "^8.0.0",
+    "node-addon-api": "^8.6.0"
   },
   "peerDependencies": {
     "typescript": "^5"

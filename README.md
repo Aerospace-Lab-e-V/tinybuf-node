@@ -5,7 +5,7 @@ Node.js native N-API bindings for the tinybuf C++ protocol library.
 ## Prerequisites
 
 - Node.js ≥ 18 or [Bun](https://bun.sh)
-- `node-gyp` build toolchain (Python 3, C++17 compiler, `make`)
+- `cmake-js` build toolchain (CMake ≥ 3.15, Python 3, C++17 compiler)
 
 ## Install & build
 
@@ -15,7 +15,7 @@ bun run build  # or npm run build
 ```
 
 Build tasks:
-- `bun run build:native`: Rebuild the C++ N-API addon with `node-gyp`
+- `bun run build:native`: Rebuild the C++ N-API addon with `cmake-js`
 - `bun run build:ts`: Compile TypeScript files with `bun build`
 - `bun run build`: Run native rebuild + TypeScript build
 - `bun run electron-rebuild`: Rebuild native addon for Electron
@@ -25,4 +25,4 @@ Build tasks:
 - `src/tinybuf-node.cpp`: C++ N-API implementation wrapping tinybuf
 - `include/`: Header files for the underlying tinybuf C++ library
 - `index.ts`: TypeScript entrypoint and type definitions
-- `binding.gyp`: node-gyp build configuration
+- `CMakeLists.txt`: CMake build configuration

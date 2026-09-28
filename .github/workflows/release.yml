@@ -51,14 +51,14 @@ jobs:
 
       - name: Build native module
         if: matrix.arch != 'arm64'
-        run: bunx node-gyp rebuild
+        run: bunx cmake-js compile
 
       - name: Cross-compile native module (arm64)
         if: matrix.arch == 'arm64'
         env:
           CC: aarch64-linux-gnu-gcc
           CXX: aarch64-linux-gnu-g++
-        run: bunx node-gyp rebuild --arch=arm64
+        run: bunx cmake-js compile --arch=arm64
 
       - name: Verify binary architecture
         run: file ./build/Release/${{ env.APP_NAME }}.node
