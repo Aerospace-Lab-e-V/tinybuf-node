@@ -21,8 +21,23 @@ jobs:
             arch: arm64
     env:
       APP_NAME: 'tinybuf-node'
+      OSAL_PATH: ${{ github.workspace }}/../osal
+      ETL_PATH: ${{ github.workspace }}/../etl
     steps:
-      - uses: actions/checkout@v7
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.10.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H git.aerospace-lab.de >> ~/.ssh/known_hosts
+
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
 
       - name: Extract version from tag
         id: version
@@ -38,13 +53,33 @@ jobs:
             exit 1
           fi
 
-      - uses: oven-sh/setup-bun@v2
+      - name: Install system dependencies (x64)
+        if: matrix.arch == 'x64'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libpoco-dev ninja-build
 
-      - name: Install cross-compilation toolchain
+      - name: Install cross-compilation toolchain (arm64)
         if: matrix.arch == 'arm64'
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          sudo apt-get install -y --no-install-recommends gcc-aarch64-linux-gnu g++-aarch64-linux-gnu ninja-build
+
+      - name: Clone and build OSAL (x64)
+        if: matrix.arch == 'x64'
+        run: |
+          git clone --recurse-submodules git@git.aerospace-lab.de:rustlet-rt/osal.git "${{ env.OSAL_PATH }}"
+          cmake -S "${{ env.OSAL_PATH }}" -B "${{ env.OSAL_PATH }}/target/linux/release" -DARCH=linux -DCMAKE_BUILD_TYPE=Release
+          cmake --build "${{ env.OSAL_PATH }}/target/linux/release"
+
+      - name: Clone and build OSAL (arm64)
+        if: matrix.arch == 'arm64'
+        run: |
+          git clone --recurse-submodules git@git.aerospace-lab.de:rustlet-rt/osal.git "${{ env.OSAL_PATH }}"
+          cmake -S "${{ env.OSAL_PATH }}" -B "${{ env.OSAL_PATH }}/target/linux/release" -DARCH=linux -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++
+          cmake --build "${{ env.OSAL_PATH }}/target/linux/release"
+
+      - uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
         run: bun install

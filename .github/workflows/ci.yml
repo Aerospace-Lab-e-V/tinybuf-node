@@ -17,11 +17,41 @@ jobs:
   build-native-module:
     name: Build native module
     runs-on: ubuntu-latest
+    env:
+      OSAL_PATH: ${{ github.workspace }}/../osal
+      ETL_PATH: ${{ github.workspace }}/../etl
 
     steps:
-      - uses: actions/checkout@v7
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.10.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H git.aerospace-lab.de >> ~/.ssh/known_hosts
+
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libpoco-dev ninja-build
+
+      - name: Clone and build OSAL
+        run: |
+          git clone --recurse-submodules git@git.aerospace-lab.de:rustlet-rt/osal.git "${{ env.OSAL_PATH }}"
+          cmake -S "${{ env.OSAL_PATH }}" -B "${{ env.OSAL_PATH }}/target/linux/release" -DARCH=linux -DCMAKE_BUILD_TYPE=Release
+          cmake --build "${{ env.OSAL_PATH }}/target/linux/release"
+
       - uses: oven-sh/setup-bun@v2
+
       - name: Install dependencies
         run: bun install
+
       - name: Build
         run: bun run build
