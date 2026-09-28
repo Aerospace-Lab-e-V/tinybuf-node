@@ -11,14 +11,16 @@ permissions:
 jobs:
   build-native-module:
     name: Build Native Module (${{ matrix.artifact-suffix }})
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
           - artifact-suffix: linux-x64
             arch: x64
+            os: ubuntu-24.04
           - artifact-suffix: linux-arm64
             arch: arm64
+            os: ubuntu-24.04-arm
     env:
       APP_NAME: 'tinybuf-node'
       OSAL_PATH: ${{ github.workspace }}/../osal
@@ -61,20 +63,12 @@ jobs:
             exit 1
           fi
 
-      - name: Install system dependencies (x64)
-        if: matrix.arch == 'x64'
+      - name: Install system dependencies
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends libpoco-dev ninja-build
 
-      - name: Install cross-compilation toolchain (arm64)
-        if: matrix.arch == 'arm64'
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends gcc-aarch64-linux-gnu g++-aarch64-linux-gnu ninja-build
-
-      - name: Clone and build OSAL (x64)
-        if: matrix.arch == 'x64'
+      - name: Clone and build OSAL
         run: |
           MOCK_APP="${{ github.workspace }}/mock-app"
           mkdir -p "$MOCK_APP/src/main/messages" "$MOCK_APP/src/main/cpp/Core"
@@ -88,36 +82,13 @@ jobs:
           cmake -S "${{ env.OSAL_PATH }}" -B "${{ env.OSAL_PATH }}/target/linux/release" -DARCH=linux -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON
           cmake --build "${{ env.OSAL_PATH }}/target/linux/release"
 
-      - name: Clone and build OSAL (arm64)
-        if: matrix.arch == 'arm64'
-        run: |
-          MOCK_APP="${{ github.workspace }}/mock-app"
-          mkdir -p "$MOCK_APP/src/main/messages" "$MOCK_APP/src/main/cpp/Core"
-          cp -r "${{ github.workspace }}/src/main/messages/"* "$MOCK_APP/src/main/messages/"
-          touch "$MOCK_APP/src/main/cpp/Core/ApplicationConfig.hpp"
-
-          git clone --recurse-submodules git@git.aerospace-lab.de:rustlet-rt/osal.git "${{ env.OSAL_PATH }}"
-
-          export RUSTLET_RT_APPLICATIONS_PATH="${{ github.workspace }}"
-          export RUSTLET_RT_APPLICATION="mock-app"
-          cmake -S "${{ env.OSAL_PATH }}" -B "${{ env.OSAL_PATH }}/target/linux/release" -DARCH=linux -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++
-          cmake --build "${{ env.OSAL_PATH }}/target/linux/release"
-
       - uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
         run: bun install
 
       - name: Build native module
-        if: matrix.arch != 'arm64'
         run: bunx cmake-js compile
-
-      - name: Cross-compile native module (arm64)
-        if: matrix.arch == 'arm64'
-        env:
-          CC: aarch64-linux-gnu-gcc
-          CXX: aarch64-linux-gnu-g++
-        run: bunx cmake-js compile --arch=arm64
 
       - name: Verify binary architecture
         run: file ./build/Release/${{ env.APP_NAME }}.node
