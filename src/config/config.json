@@ -1,0 +1,22 @@
+{
+  "LoggingManager": {
+    "pattern": "%Y-%m-%d %H:%M:%S [%p] %s: %t",
+    "defaultLogLevel": "information",
+    "logLevel": "information"
+  },
+  "Proxy": {
+    "logLevel": "information",
+    "sendMessages": [
+      "LedCommand"
+    ],
+    "receiveMessages": [
+      "AdcStatus"
+    ],
+    "port": 5004,
+    "capacityMessageBuffer": 512,
+    "sendGroup": "239.168.178.2",
+    "receiveGroups": [
+      "239.168.178.1"
+    ]
+  }
+}
