@@ -27,10 +27,18 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Add known hosts
+      - name: Configure SSH and git
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H git.aerospace-lab.de >> ~/.ssh/known_hosts
+          cat << 'EOF' >> ~/.ssh/config
+          Host git.aerospace-lab.de
+            ControlMaster auto
+            ControlPath ~/.ssh/cm-%r@%h:%p
+            ControlPersist 10m
+            ServerAliveInterval 30
+          EOF
+          git config --global submodule.fetchJobs 1
 
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -44,7 +52,15 @@ jobs:
 
       - name: Clone and build OSAL
         run: |
+          MOCK_APP="${{ github.workspace }}/mock-app"
+          mkdir -p "$MOCK_APP/src/main/messages" "$MOCK_APP/src/main/cpp/Core"
+          cp -r "${{ github.workspace }}/src/main/messages/"* "$MOCK_APP/src/main/messages/"
+          touch "$MOCK_APP/src/main/cpp/Core/ApplicationConfig.hpp"
+
           git clone --recurse-submodules git@git.aerospace-lab.de:rustlet-rt/osal.git "${{ env.OSAL_PATH }}"
+
+          export RUSTLET_RT_APPLICATIONS_PATH="${{ github.workspace }}"
+          export RUSTLET_RT_APPLICATION="mock-app"
           cmake -S "${{ env.OSAL_PATH }}" -B "${{ env.OSAL_PATH }}/target/linux/release" -DARCH=linux -DCMAKE_BUILD_TYPE=Release
           cmake --build "${{ env.OSAL_PATH }}/target/linux/release"
 
