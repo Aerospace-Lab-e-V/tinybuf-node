@@ -3,6 +3,9 @@ node_modules
 
 # output
 out
+temp/
+Generated/
+target/
 
 # headers copied at build/publish time
 include/*.hpp
