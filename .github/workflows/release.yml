@@ -22,7 +22,7 @@ jobs:
     env:
       APP_NAME: 'sero2-node'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Extract version from tag
         id: version
@@ -82,7 +82,7 @@ jobs:
       REGISTRY_URL: ${{ secrets.REGISTRY_URL }}
       APP_NAME: 'sero2-node'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Extract version from tag
         id: version
