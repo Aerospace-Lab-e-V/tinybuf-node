@@ -61,7 +61,7 @@ jobs:
 
           export RUSTLET_RT_APPLICATIONS_PATH="${{ github.workspace }}"
           export RUSTLET_RT_APPLICATION="mock-app"
-          cmake -S "${{ env.OSAL_PATH }}" -B "${{ env.OSAL_PATH }}/target/linux/release" -DARCH=linux -DCMAKE_BUILD_TYPE=Release
+          cmake -S "${{ env.OSAL_PATH }}" -B "${{ env.OSAL_PATH }}/target/linux/release" -DARCH=linux -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON
           cmake --build "${{ env.OSAL_PATH }}/target/linux/release"
 
       - uses: oven-sh/setup-bun@v2

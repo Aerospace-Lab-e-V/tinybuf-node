@@ -85,7 +85,7 @@ jobs:
 
           export RUSTLET_RT_APPLICATIONS_PATH="${{ github.workspace }}"
           export RUSTLET_RT_APPLICATION="mock-app"
-          cmake -S "${{ env.OSAL_PATH }}" -B "${{ env.OSAL_PATH }}/target/linux/release" -DARCH=linux -DCMAKE_BUILD_TYPE=Release
+          cmake -S "${{ env.OSAL_PATH }}" -B "${{ env.OSAL_PATH }}/target/linux/release" -DARCH=linux -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON
           cmake --build "${{ env.OSAL_PATH }}/target/linux/release"
 
       - name: Clone and build OSAL (arm64)
@@ -100,7 +100,7 @@ jobs:
 
           export RUSTLET_RT_APPLICATIONS_PATH="${{ github.workspace }}"
           export RUSTLET_RT_APPLICATION="mock-app"
-          cmake -S "${{ env.OSAL_PATH }}" -B "${{ env.OSAL_PATH }}/target/linux/release" -DARCH=linux -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++
+          cmake -S "${{ env.OSAL_PATH }}" -B "${{ env.OSAL_PATH }}/target/linux/release" -DARCH=linux -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++
           cmake --build "${{ env.OSAL_PATH }}/target/linux/release"
 
       - uses: oven-sh/setup-bun@v2
