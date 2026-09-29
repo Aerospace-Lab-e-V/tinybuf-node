@@ -66,7 +66,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends libpoco-dev ninja-build
+          sudo apt-get install -y --no-install-recommends ninja-build
 
       - name: Clone and build OSAL
         run: |
@@ -92,6 +92,14 @@ jobs:
 
       - name: Verify binary architecture
         run: file ./build/Release/${{ env.APP_NAME }}.node
+
+      - name: Verify no dynamic Poco dependencies
+        run: |
+          if ldd ./build/Release/${{ env.APP_NAME }}.node | grep -i poco; then
+            echo "::error::Binary contains dynamic Poco shared library dependencies!"
+            exit 1
+          fi
+          echo "Verified: no dynamic Poco dependencies!"
 
       - name: Rename artifact
         run: mv ./build/Release/${{ env.APP_NAME }}.node ./${{ env.APP_NAME }}-${{ matrix.artifact-suffix }}.node

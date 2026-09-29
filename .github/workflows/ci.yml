@@ -48,7 +48,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends libpoco-dev ninja-build
+          sudo apt-get install -y --no-install-recommends ninja-build
 
       - name: Clone and build OSAL
         run: |
@@ -71,3 +71,11 @@ jobs:
 
       - name: Build
         run: bun run build
+
+      - name: Verify no dynamic Poco dependencies
+        run: |
+          if ldd ./build/Release/tinybuf-node.node | grep -i poco; then
+            echo "::error::Binary contains dynamic Poco shared library dependencies!"
+            exit 1
+          fi
+          echo "Verified: no dynamic Poco dependencies in binary!"

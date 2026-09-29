@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(tinybuf-node CXX)
+project(tinybuf-node C CXX)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD 17)
@@ -25,6 +25,9 @@ endif()
 # Download / include ETL target etl::etl
 include(${CMAKE_CURRENT_LIST_DIR}/src/cmake/fetchcontent_etl.cmake)
 
+# Download / include static POCO
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/fetchcontent_poco.cmake)
+
 # Setup Python interpreter
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 message(STATUS "Using Python Interpreter: ${Python3_EXECUTABLE}")
@@ -47,6 +50,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Release")
 
 # Add linux-al static library
 add_subdirectory(linux-al)
+target_link_libraries(linux-al PUBLIC ${POCO_LIBRARIES})
 
 # Custom target for message generation
 add_custom_target(generate_app_messages ALL DEPENDS ${MY_SERIALIZABLE_MESSAGES})
@@ -112,9 +116,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     linux-al
     osal
     etl::etl
-    PocoNet
-    PocoUtil
-    PocoFoundation
+    ${POCO_LIBRARIES}
     ${CMAKE_JS_LIB}
 )
 
