@@ -223,7 +223,7 @@ void TinybufProxy::onAdcReceived(const AdcStatus& data) {
 
 static Napi::String Version(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
-    return Napi::String::New(env, "0.1.0");
+    return Napi::String::New(env, "0.1.1");
 }
 
 static Napi::Object ModuleInit(Napi::Env env, Napi::Object exports) {
