@@ -45,11 +45,11 @@ if (DEFINED ENV{POCO_PATH} AND EXISTS "$ENV{POCO_PATH}")
         SOURCE_DIR "$ENV{POCO_PATH}"
     )
 else()
-    message(STATUS "Downloading Poco 1.13.3 release via FetchContent...")
+    message(STATUS "Downloading Poco 1.15.3 release via FetchContent...")
     FetchContent_Declare(
         poco
         GIT_REPOSITORY https://github.com/pocoproject/poco.git
-        GIT_TAG        poco-1.13.3-release
+        GIT_TAG        poco-1.15.3-release
         GIT_SHALLOW    TRUE
     )
 endif()
