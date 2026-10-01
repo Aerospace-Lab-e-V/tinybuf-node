@@ -57,15 +57,17 @@ add_custom_target(generate_app_messages ALL DEPENDS ${MY_SERIALIZABLE_MESSAGES})
 add_dependencies(linux-al generate_app_messages)
 
 # Query Node.js and node-addon-api include directories
-if(DEFINED CMAKE_JS_INC)
+if(DEFINED CMAKE_JS_INC AND EXISTS "${CMAKE_JS_INC}/node_api.h")
     set(NODE_INCLUDE_DIR ${CMAKE_JS_INC})
-else()
+elseif(NOT DEFINED NODE_INCLUDE_DIR OR NOT EXISTS "${NODE_INCLUDE_DIR}/node_api.h")
     execute_process(
         COMMAND node -p "path.resolve(process.execPath, '../../include/node')"
         OUTPUT_VARIABLE NODE_INCLUDE_DIR
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
 endif()
+
+
 
 execute_process(
     COMMAND node -p "require('node-addon-api').include"
