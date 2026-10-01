@@ -3,15 +3,41 @@
 
 #include <napi.h>
 #include <string>
-#include <iostream>
 
 #include "etl/delegate.h"
+#include "etl/queue_spsc_atomic.h"
 
-#include "BootLoaderIF.hpp"
 #include "ProxyIF.hpp"
-#include "MessageDispatcherPassthruIF.hpp"
-
 #include "ApplicationMessages.hpp"
+
+extern "C"
+{
+  extern const char*    getStatusBootLoader();
+  extern int            startBootLoader(const char* p_nameApplication, const char* p_configFile);
+  extern int            stopBootLoader();
+  extern int            getRunLevelBootLoader();
+
+  extern int            sendMessage_LedCommand(const LedCommand* p_message);
+  extern void           registerCallback_AdcStatus(void (*p_callback)(const AdcStatus*));
+  extern bool           isAvailableProxy();
+
+  void                  listenAdcStatus(const AdcStatus* p_status);
+}
+
+class TinybufProxy;
+
+static etl::delegate<void(const AdcStatus&)> s_actCallback;
+
+void
+listenAdcStatus
+ (const AdcStatus* p_status)
+{
+  if ((nullptr != p_status) &&
+      (true == s_actCallback.is_valid()))
+  {
+    s_actCallback(*p_status);
+  }
+}
 
 class TinybufProxy : public Napi::ObjectWrap<TinybufProxy> {
 public:
@@ -20,6 +46,9 @@ public:
     ~TinybufProxy();
 
 private:
+    static void CallJsAdcStatus(Napi::Env env, Napi::Function jsCallback, TinybufProxy* proxy, void* data);
+    using AdcThreadSafeFunction = Napi::TypedThreadSafeFunction<TinybufProxy, void, CallJsAdcStatus>;
+
     // Lifecycle
     Napi::Value Open(const Napi::CallbackInfo& info);
     Napi::Value Close(const Napi::CallbackInfo& info);
@@ -40,7 +69,8 @@ private:
 
     std::string m_configFile;
     bool m_opened = false;
-    Napi::ThreadSafeFunction m_tsfnAdcStatus;
+    AdcThreadSafeFunction m_tsfnAdcStatus;
+    etl::queue_spsc_atomic<AdcStatus, 128> m_adcQueue;
 };
 
 Napi::Object TinybufProxy::Init(Napi::Env env, Napi::Object exports) {
@@ -72,7 +102,9 @@ TinybufProxy::~TinybufProxy() {
 
 void TinybufProxy::performClose() {
     if (m_opened) {
-        MessageDispatcherPassthruRTIF<AdcStatus>::getInstance().clear();
+        registerCallback_AdcStatus(nullptr);
+        s_actCallback.clear();
+        m_adcQueue.clear();
         if (m_tsfnAdcStatus) {
             m_tsfnAdcStatus.Release();
             m_tsfnAdcStatus = nullptr;
@@ -151,7 +183,11 @@ Napi::Value TinybufProxy::SendLedCommand(const Napi::CallbackInfo& info) {
     }
 
     LedCommand cmd = { on };
-    dispatchMessage(sequence, &cmd);
+    if (info.Length() >= 2) {
+        dispatchMessage(sequence, &cmd);
+    } else {
+        sendMessage_LedCommand(&cmd);
+    }
 
     return Napi::Boolean::New(env, true);
 }
@@ -165,23 +201,24 @@ Napi::Value TinybufProxy::OnAdcStatus(const Napi::CallbackInfo& info) {
     }
 
     if (m_tsfnAdcStatus) {
-        MessageDispatcherPassthruRTIF<AdcStatus>::getInstance().clear();
+        registerCallback_AdcStatus(nullptr);
+        s_actCallback.clear();
         m_tsfnAdcStatus.Release();
         m_tsfnAdcStatus = nullptr;
+        m_adcQueue.clear();
     }
 
-    m_tsfnAdcStatus = Napi::ThreadSafeFunction::New(
+    m_tsfnAdcStatus = AdcThreadSafeFunction::New(
         env,
         info[0].As<Napi::Function>(),
         "AdcStatusCallback",
         0,
-        1
+        1,
+        this
     );
 
-    MessageDispatcherPassthruRTIF<AdcStatus>::PassthruCallback actCallback(
-        etl::delegate<void(const AdcStatus&)>::create<TinybufProxy, &TinybufProxy::onAdcReceived>(*this)
-    );
-    MessageDispatcherPassthruRTIF<AdcStatus>::getInstance().registerCallback(actCallback);
+    s_actCallback = etl::delegate<void(const AdcStatus&)>::create<TinybufProxy, &TinybufProxy::onAdcReceived>(*this);
+    registerCallback_AdcStatus(listenAdcStatus);
 
     return env.Undefined();
 }
@@ -189,7 +226,9 @@ Napi::Value TinybufProxy::OnAdcStatus(const Napi::CallbackInfo& info) {
 Napi::Value TinybufProxy::ClearAdcStatus(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    MessageDispatcherPassthruRTIF<AdcStatus>::getInstance().clear();
+    registerCallback_AdcStatus(nullptr);
+    s_actCallback.clear();
+    m_adcQueue.clear();
     if (m_tsfnAdcStatus) {
         m_tsfnAdcStatus.Release();
         m_tsfnAdcStatus = nullptr;
@@ -199,31 +238,29 @@ Napi::Value TinybufProxy::ClearAdcStatus(const Napi::CallbackInfo& info) {
 }
 
 void TinybufProxy::onAdcReceived(const AdcStatus& data) {
-    if (!m_tsfnAdcStatus) {
-        return;
+    if (m_tsfnAdcStatus) {
+        if (m_adcQueue.push(data)) {
+            m_tsfnAdcStatus.NonBlockingCall(nullptr);
+        }
     }
+}
 
-    AdcStatus* copy = new AdcStatus(data);
-    auto callback = [](Napi::Env env, Napi::Function jsCallback, AdcStatus* pData) {
-        if (env != nullptr && jsCallback != nullptr && pData != nullptr) {
+void TinybufProxy::CallJsAdcStatus(Napi::Env env, Napi::Function jsCallback, TinybufProxy* proxy, void* /*data*/) {
+    if (env != nullptr && jsCallback != nullptr && proxy != nullptr) {
+        AdcStatus status;
+        while (proxy->m_adcQueue.pop(status)) {
             Napi::Object obj = Napi::Object::New(env);
-            obj.Set("max", Napi::Number::New(env, pData->m_max));
-            obj.Set("min", Napi::Number::New(env, pData->m_min));
-            obj.Set("value", Napi::Number::New(env, pData->m_value));
+            obj.Set("max", Napi::Number::New(env, status.m_max));
+            obj.Set("min", Napi::Number::New(env, status.m_min));
+            obj.Set("value", Napi::Number::New(env, status.m_value));
             jsCallback.Call({ obj });
         }
-        delete pData;
-    };
-
-    napi_status status = m_tsfnAdcStatus.NonBlockingCall(copy, callback);
-    if (status != napi_ok) {
-        delete copy;
     }
 }
 
 static Napi::String Version(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
-    return Napi::String::New(env, "0.1.1");
+    return Napi::String::New(env, "0.1.2");
 }
 
 static Napi::Object ModuleInit(Napi::Env env, Napi::Object exports) {
